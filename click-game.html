@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スターウォーズ - TIEファイター撃墜ゲーム</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Orbitron', monospace;
+            background: #000;
+            overflow: hidden;
+            cursor: crosshair;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><circle cx="100" cy="100" r="1" fill="white"/><circle cx="200" cy="150" r="1" fill="white"/><circle cx="300" cy="80" r="1" fill="white"/><circle cx="400" cy="200" r="1" fill="white"/><circle cx="500" cy="120" r="1" fill="white"/><circle cx="600" cy="180" r="1" fill="white"/><circle cx="700" cy="50" r="1" fill="white"/><circle cx="800" cy="220" r="1" fill="white"/><circle cx="900" cy="140" r="1" fill="white"/><circle cx="1000" cy="90" r="1" fill="white"/><circle cx="1100" cy="170" r="1" fill="white"/><circle cx="150" cy="300" r="1" fill="white"/><circle cx="250" cy="350" r="1" fill="white"/><circle cx="350" cy="280" r="1" fill="white"/><circle cx="450" cy="400" r="1" fill="white"/><circle cx="550" cy="320" r="1" fill="white"/><circle cx="650" cy="380" r="1" fill="white"/><circle cx="750" cy="250" r="1" fill="white"/><circle cx="850" cy="420" r="1" fill="white"/><circle cx="950" cy="340" r="1" fill="white"/><circle cx="1050" cy="290" r="1" fill="white"/><circle cx="1150" cy="370" r="1" fill="white"/><circle cx="120" cy="500" r="1" fill="white"/><circle cx="220" cy="550" r="1" fill="white"/><circle cx="320" cy="480" r="1" fill="white"/><circle cx="420" cy="600" r="1" fill="white"/><circle cx="520" cy="520" r="1" fill="white"/><circle cx="620" cy="580" r="1" fill="white"/><circle cx="720" cy="450" r="1" fill="white"/><circle cx="820" cy="620" r="1" fill="white"/><circle cx="920" cy="540" r="1" fill="white"/><circle cx="1020" cy="490" r="1" fill="white"/><circle cx="1120" cy="570" r="1" fill="white"/><circle cx="180" cy="700" r="1" fill="white"/><circle cx="280" cy="750" r="1" fill="white"/><circle cx="380" cy="680" r="1" fill="white"/><circle cx="480" cy="720" r="1" fill="white"/><circle cx="580" cy="660" r="1" fill="white"/><circle cx="680" cy="740" r="1" fill="white"/><circle cx="780" cy="650" r="1" fill="white"/><circle cx="880" cy="760" r="1" fill="white"/><circle cx="980" cy="690" r="1" fill="white"/><circle cx="1080" cy="710" r="1" fill="white"/></svg>');
+            opacity: 0.8;
+            z-index: 1;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        #scoreBoard {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) perspective(300px) rotateX(25deg);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 30px;
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 20px #00ff00, inset 0 0 20px rgba(0, 255, 0, 0.2);
+            font-size: 20px;
+            z-index: 100;
+            color: #00ff00;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #score {
+            font-weight: bold;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        #timeLeft {
+            color: #ff0000;
+            margin-left: 20px;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        .target {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle at 30% 30%, #666, #333);
+            clip-path: polygon(50% 0%, 20% 50%, 50% 100%, 80% 50%);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+            animation: fly 3s linear infinite;
+        }
+
+        .target::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #999;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+        }
+
+        .target::after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 100%;
+            background: #999;
+            left: 50%;
+            top: 0;
+            transform: translateX(-50%);
+        }
+
+        @keyframes fly {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .target:hover {
+            filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.8));
+        }
+
+        .clicked {
+            animation: explode 0.5s ease-out;
+        }
+
+        @keyframes explode {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+                filter: brightness(1);
+            }
+            50% {
+                filter: brightness(3) hue-rotate(60deg);
+            }
+            100% {
+                transform: scale(2);
+                opacity: 0;
+                filter: brightness(0);
+            }
+        }
+
+        #startScreen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.95) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        #startScreen h1 {
+            color: #ffd700;
+            font-size: 72px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px #ffd700, 0 0 60px #ffd700;
+            font-weight: 900;
+            letter-spacing: 5px;
+            transform: perspective(300px) rotateX(25deg);
+        }
+
+        #startScreen h2 {
+            color: #ffd700;
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #ffd700;
+            font-weight: 700;
+            letter-spacing: 3px;
+        }
+
+        #startButton, #restartButton {
+            padding: 15px 40px;
+            font-size: 24px;
+            background: transparent;
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-family: 'Orbitron', monospace;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5), inset 0 0 20px rgba(0, 255, 0, 0.1);
+        }
+
+        #startButton:hover, #restartButton:hover {
+            background: rgba(0, 255, 0, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.8), inset 0 0 30px rgba(0, 255, 0, 0.3);
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        #gameOverScreen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.95) 100%);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        #gameOverScreen h2 {
+            color: #ff0000;
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px #ff0000;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        #finalScore {
+            color: #ffd700;
+            font-size: 36px;
+            margin-bottom: 30px;
+            text-shadow: 0 0 20px #ffd700;
+        }
+
+        .bonus {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle at 30% 30%, #ff0000, #800000);
+            clip-path: polygon(50% 0%, 20% 50%, 50% 100%, 80% 50%);
+            cursor: pointer;
+            filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.8));
+            animation: bonusFly 2s linear infinite;
+        }
+
+        .bonus::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: #ff6666;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            box-shadow: 0 0 10px #ff0000;
+        }
+
+        .bonus::after {
+            content: '';
+            position: absolute;
+            width: 3px;
+            height: 100%;
+            background: #ff6666;
+            left: 50%;
+            top: 0;
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px #ff0000;
+        }
+
+        @keyframes bonusFly {
+            0% {
+                transform: rotate(0deg) scale(1);
+            }
+            50% {
+                transform: rotate(180deg) scale(1.1);
+            }
+            100% {
+                transform: rotate(360deg) scale(1);
+            }
+        }
+
+        .scorePopup {
+            position: absolute;
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+            pointer-events: none;
+            animation: scoreFloat 1s ease-out;
+            z-index: 150;
+            font-family: 'Orbitron', monospace;
+        }
+
+        @keyframes scoreFloat {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+        }
+
+        .starfield {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: 0;
+        }
+
+        .laser-blast {
+            position: absolute;
+            width: 50px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff00, #00ff00, transparent);
+            box-shadow: 0 0 10px #00ff00;
+            pointer-events: none;
+            animation: laserShoot 0.3s linear;
+        }
+
+        @keyframes laserShoot {
+            0% {
+                opacity: 1;
+                transform: scaleX(0);
+            }
+            100% {
+                opacity: 0;
+                transform: scaleX(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="scoreBoard">
+            スコア: <span id="score">0</span>
+            <span id="timeLeft">残り時間: 60秒</span>
+        </div>
+
+        <div id="startScreen">
+            <h1>STAR WARS</h1>
+            <h2>TIE FIGHTER ASSAULT</h2>
+            <p style="color: #00ff00; font-size: 20px; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px;">
+                帝国軍のTIEファイターを撃墜せよ！<br>
+                <span style="color: #ff0000;">赤いエリート機は3倍のポイント！</span>
+            </p>
+            <button id="startButton">ミッション開始</button>
+        </div>
+
+        <div id="gameOverScreen">
+            <h2>ミッション終了</h2>
+            <div id="finalScore"></div>
+            <button id="restartButton">再出撃</button>
+        </div>
+    </div>
+
+    <script>
+        let score = 0;
+        let timeLeft = 60;
+        let gameInterval;
+        let targetInterval;
+        let bonusInterval;
+        let gameActive = false;
+
+        const gameContainer = document.getElementById('gameContainer');
+        const scoreElement = document.getElementById('score');
+        const timeLeftElement = document.getElementById('timeLeft');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const finalScoreElement = document.getElementById('finalScore');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+
+        function getRandomPosition() {
+            const margin = 100;
+            const x = Math.random() * (window.innerWidth - margin) + margin/2;
+            const y = Math.random() * (window.innerHeight - margin - 100) + 100;
+            return { x, y };
+        }
+
+        function createTarget(isBonus = false) {
+            const target = document.createElement('div');
+            target.className = isBonus ? 'bonus' : 'target';
+            const position = getRandomPosition();
+            target.style.left = position.x + 'px';
+            target.style.top = position.y + 'px';
+            
+            target.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const points = isBonus ? 30 : 10;
+                score += points;
+                scoreElement.textContent = score;
+                
+                // スコアポップアップを表示
+                showScorePopup(e.pageX, e.pageY, points);
+                
+                target.classList.add('clicked');
+                setTimeout(() => {
+                    target.remove();
+                }, 500);
+            });
+
+            gameContainer.appendChild(target);
+
+            // 一定時間後に自動削除
+            setTimeout(() => {
+                if (target.parentNode) {
+                    target.remove();
+                }
+            }, isBonus ? 3000 : 4000);
+        }
+
+        function showScorePopup(x, y, points) {
+            const popup = document.createElement('div');
+            popup.className = 'scorePopup';
+            popup.textContent = `+${points}`;
+            popup.style.left = x + 'px';
+            popup.style.top = y + 'px';
+            gameContainer.appendChild(popup);
+
+            setTimeout(() => {
+                popup.remove();
+            }, 1000);
+        }
+
+        function startGame() {
+            score = 0;
+            timeLeft = 60;
+            scoreElement.textContent = score;
+            gameActive = true;
+            
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+
+            // ターゲット生成
+            targetInterval = setInterval(() => {
+                if (gameActive) {
+                    createTarget();
+                }
+            }, 1000);
+
+            // ボーナスターゲット生成
+            bonusInterval = setInterval(() => {
+                if (gameActive) {
+                    createTarget(true);
+                }
+            }, 5000);
+
+            // タイマー
+            gameInterval = setInterval(() => {
+                timeLeft--;
+                timeLeftElement.textContent = `残り時間: ${timeLeft}秒`;
+                
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(gameInterval);
+            clearInterval(targetInterval);
+            clearInterval(bonusInterval);
+
+            // 残りのターゲットを削除
+            document.querySelectorAll('.target, .bonus').forEach(target => {
+                target.remove();
+            });
+
+            finalScoreElement.textContent = `撃墜数: ${score}機`;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        // ミスクリックペナルティ
+        gameContainer.addEventListener('click', function(e) {
+            if (gameActive && e.target === gameContainer) {
+                score = Math.max(0, score - 5);
+                scoreElement.textContent = score;
+                showScorePopup(e.pageX, e.pageY, -5);
+                
+                // レーザー効果を追加
+                const laser = document.createElement('div');
+                laser.className = 'laser-blast';
+                laser.style.left = (e.pageX - 25) + 'px';
+                laser.style.top = e.pageY + 'px';
+                laser.style.transform = `rotate(${Math.random() * 360}deg)`;
+                gameContainer.appendChild(laser);
+                
+                setTimeout(() => {
+                    laser.remove();
+                }, 300);
+            }
+        });
+
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', startGame);
+    </script>
+</body>
+</html>
